@@ -31,47 +31,35 @@ The trap monitors the balance of a specific wallet and compares it to the previo
 pragma solidity ^0.8.20;
 
 interface ITrap {
-    function collect() external returns (bytes memory);
-    function shouldRespond(bytes[] calldata data) external view returns (bool, bytes memory);  // As is
+    function collect() external view returns (bytes memory);
+    function shouldRespond(bytes[] calldata data) external pure returns (bool, bytes memory);
 }
 
 contract BalanceChangeTrap is ITrap {
-    address public constant target = 0xe4AE1F1D5dfaC3B59e1c3c766aF2A19F85f73BB3; // Your wallet address
-    uint256 public constant changeThreshold = 0.01 ether; // Threshold for balance change
+    address public constant target = 0xe4AE1F********e1c3c766aF2A19F85f73BB3; // A tracked wallet
+    uint256 public constant changeThreshold = 0.01 ether;
 
-    uint256 public previousBalance;
-
-    event BalanceChangeAlert(string message);
-
-    constructor() {
-        previousBalance = target.balance;
-    }
-
-    // Function to collect current balance data
-    function collect() external override returns (bytes memory) {
+    // Data collection: current balance
+    function collect() external view override returns (bytes memory) {
         return abi.encode(target.balance);
     }
 
-    // Function to check balance change and trigger the alert
-    function shouldRespond(bytes[] calldata data) external view override returns (bool, bytes memory) {
-        if (data.length < 2) return (false, "Insufficient data");
+    // Checking the balance change
+    function shouldRespond(bytes[] calldata data) external pure override returns (bool, bytes memory) {
+        if (data.length < 2) {
+            return (false, abi.encode("Insufficient data"));
+        }
 
         uint256 current = abi.decode(data[0], (uint256));
         uint256 previous = abi.decode(data[1], (uint256));
 
         uint256 diff = current > previous ? current - previous : previous - current;
 
-        // If the balance difference exceeds the threshold
         if (diff >= changeThreshold) {
             return (true, abi.encode("Balance change exceeded threshold"));
         }
 
-        return (false, "");
-    }
-
-    // Update the previous balance for future comparisons
-    function updatePreviousBalance() external {
-        previousBalance = target.balance;
+        return (false, bytes(""));
     }
 }
 ```
